@@ -1,0 +1,1202 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KingSignals Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1E3A8A',
+                        accent: '#00FF00',
+                        danger: '#F87171',
+                        success: '#34D399',
+                    },
+                    animation: {
+                        'glow': 'glow 0.8s ease-in-out infinite alternate',
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'pulse': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'dropdown': 'dropdown 0.3s ease-out',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 8px rgba(0, 255, 0, 0.6), inset 0 0 8px rgba(0, 255, 0, 0.6)' },
+                            '100%': { boxShadow: '0 0 30px rgba(0, 255, 0, 0.9), inset 0 0 30px rgba(0, 255, 0, 0.9)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        pulse: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0.5' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(100%)' },
+                            '100%': { transform: 'translateX(0)' },
+                        },
+                        dropdown: {
+                            '0%': { opacity: '0', transform: 'scaleY(0)' },
+                            '100%': { opacity: '1', transform: 'scaleY(1)' },
+                        },
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            background: #000;
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            overflow-y: auto;
+            color: #fff;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        #login-container {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%), url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"%3E%3Cpath fill="%2300FF00" fill-opacity="0.1" d="M0,160L48,186.7C96,213,192,267,288,261.3C384,256,480,192,576,181.3C672,171,768,213,864,213.3C960,213,1056,171,1152,154.7C1248,139,1344,149,1392,154.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"%3E%3C/path%3E%3C/svg%3E') no-repeat center bottom;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #FFD700, #00FF00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .login-form {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 0 50px rgba(0, 255, 0, 0.5);
+            border: 2px solid rgba(0, 255, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            animation: fade-in 0.5s ease-out;
+        }
+        .login-form::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 255, 0, 0.2) 0%, transparent 70%);
+            animation: pulse 10s infinite;
+            z-index: -1;
+        }
+        .login-form input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(0, 255, 0, 0.4);
+            border-radius: 10px;
+            color: #fff;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .login-form input:focus {
+            outline: none;
+            border-color: #00FF00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+        }
+        .login-form button {
+            width: 100%;
+            padding: 16px;
+            margin: 20px 0;
+            background: linear-gradient(90deg, #00FF00, #FFD700);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .login-form button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.8);
+        }
+        .login-form button:disabled {
+            background: rgba(0, 255, 0, 0.3);
+            cursor: not-allowed;
+        }
+        .login-link {
+            display: block;
+            text-align: center;
+            color: #34D399;
+            margin-top: 15px;
+            transition: color 0.3s;
+        }
+        .login-link:hover {
+            color: #FFD700;
+        }
+        .error-message, .validation-message {
+            color: #F87171;
+            text-align: center;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .validation-message.valid {
+            color: #34D399;
+        }
+        .language-toggle-login {
+            width: 100%;
+            padding: 12px;
+            margin: 15px 0;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 10px;
+            color: #fff;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .language-toggle-login:hover {
+            background: rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+        .app-container {
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .main-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .widget-container {
+            width: 100%;
+            max-width: 317px;
+            height: 467px;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1), #000);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            margin: 0 auto;
+            animation: glow 0.8s ease-in-out infinite alternate;
+        }
+        .widget-wrapper {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(0, 255, 0, 0.2);
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            transition: transform 0.3s ease-out;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: -5px 0 15px rgba(0, 255, 0, 0.2);
+        }
+        .sidebar.open {
+            transform: translateX(-300px);
+            animation: slide-in 0.3s ease-out forwards;
+        }
+        .hamburger {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1100;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            cursor: pointer;
+        }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: #00FF00;
+            margin: 5px 0;
+        }
+        .currency-dropdown {
+            position: relative;
+            width: 100%;
+            margin: 10px 0;
+        }
+        .currency-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: linear-gradient(90deg, rgba(0, 255, 0, 0.1), rgba(255, 215, 0, 0.1));
+            border: 1px solid rgba(0, 255, 0, 0.4);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .currency-dropdown-toggle:hover {
+            background: linear-gradient(90deg, rgba(0, 255, 0, 0.3), rgba(255, 215, 0, 0.3));
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+        }
+        .currency-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid rgba(0, 255, 0, 0.4);
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            transform-origin: top;
+            animation: dropdown 0.3s ease-out;
+            z-index: 100;
+            display: none;
+        }
+        .currency-dropdown-menu.open {
+            display: block;
+        }
+        .currency-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .currency-item:hover {
+            background: rgba(0, 255, 0, 0.2);
+        }
+        .currency-item.active {
+            background: linear-gradient(90deg, rgba(0, 255, 0, 0.5), rgba(255, 215, 0, 0.5));
+        }
+        .favorite-star.favorited::after {
+            content: '★';
+            color: #FFD700;
+        }
+        .favorite-star:not(.favorited)::after {
+            content: '☆';
+            color: #fff;
+        }
+        .auto-update-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .auto-update-input {
+            width: 60px;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 5px;
+            color: #fff;
+            text-align: center;
+        }
+        .sidebar-button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: linear-gradient(90deg, rgba(0, 255, 0, 0.1), rgba(255, 215, 0, 0.1));
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .sidebar-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        .sidebar-button:hover::before {
+            left: 100%;
+        }
+        .sidebar-button:hover {
+            background: linear-gradient(90deg, rgba(0, 255, 0, 0.3), rgba(255, 215, 0, 0.3));
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+            transform: translateX(5px);
+        }
+        .sidebar-button.active {
+            background: linear-gradient(90deg, rgba(0, 255, 0, 0.5), rgba(255, 215, 0, 0.5));
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.9);
+        }
+        .user-details {
+            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .user-details.open {
+            display: block;
+        }
+        .current-currency {
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+        }
+        .countdown-timer {
+            margin-top: 10px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+        }
+        .refresh-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .refresh-button:hover {
+            background: rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        .usage-instructions {
+            font-size: 14px;
+            text-align: center;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+        .usage-instructions ul li {
+            text-align: right;
+        }
+        .green-text {
+            color: #34D399;
+            font-weight: bold;
+        }
+        .red-text {
+            color: #F87171;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-container" class="login-container">
+        <h1 id="app-title" class="text-5xl font-extrabold text-center gradient-text mb-10 animate-pulse">KingSignals Pro</h1>
+        <div class="login-form">
+            <input type="text" id="username" placeholder="اسم المستخدم" required>
+            <p id="username-validation" class="validation-message"></p>
+            <input type="password" id="password" placeholder="كلمة المرور" required>
+            <p id="password-validation" class="validation-message"></p>
+            <button id="register-button" class="register-button" onclick="registerNewUser()">تسجيل مستخدم جديد</button>
+            <a id="login-link" class="login-link" href="#" onclick="loginExistingUser()">لدي حساب بالفعل؟ تسجيل الدخول</a>
+            <button id="language-toggle-login" class="language-toggle-login" onclick="toggleLanguage()">Switch to English</button>
+            <p id="error-message" class="error-message" style="display: none;"></p>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-container" style="display: none;">
+        <div class="hamburger" onclick="toggleSidebar()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="sidebar" id="sidebar">
+            <h2 id="select-currency-title" class="text-2xl font-bold text-center gradient-text mb-4">اختر العملة</h2>
+            <button id="user-details-toggle" class="sidebar-button" onclick="toggleUserDetails()">تفاصيل الاشتراك</button>
+            <div id="user-details" class="user-details">
+                <p id="user-username"></p>
+                <p id="user-subscription"></p>
+                <p id="user-expiry"></p>
+            </div>
+            <button id="favorites-toggle" class="sidebar-button" onclick="toggleFavorites()">عرض العملات المفضلة</button>
+            <div class="currency-dropdown">
+                <div class="currency-dropdown-toggle" onclick="toggleDropdown()">
+                    <span id="dropdown-selected">اختر عملة</span>
+                    <span>▼</span>
+                </div>
+                <div id="currencyDropdown" class="currency-dropdown-menu"></div>
+            </div>
+            <div class="auto-update-container">
+                <input type="number" id="updateInterval" class="auto-update-input" placeholder="ثوانٍ" min="1" value="5">
+                <button id="autoUpdateButton" class="sidebar-button" onclick="toggleAutoUpdate()">تشغيل/إيقاف</button>
+                <button id="pauseResumeButton" class="sidebar-button" onclick="pauseResumeAutoUpdate()" style="display: none;">إيقاف مؤقت</button>
+            </div>
+            <button id="language-toggle" class="sidebar-button" onclick="toggleLanguage()">Switch to English</button>
+        </div>
+        <div class="main-container glassmorphism rounded-3xl p-8 flex flex-col items-center animate-glow">
+            <h1 id="app-title-main" class="text-4xl font-extrabold text-center gradient-text mb-4">KingSignals Pro</h1>
+            <div id="current-currency" class="current-currency">العملة الحالية: USD/JPY</div>
+            <div id="usage-instructions" class="usage-instructions">
+                <p id="usage-title"><strong>تعليمات الاستخدام</strong></p>
+                <p id="usage-select-duration">اختار مدة الصفقة التي تناسبك وتأكد من أن الإشارة تظهر بوضوح</p>
+                <p id="usage-rely-signal">اعتمد على الإشارة فقط عندما تكون</p>
+                <ul class="list-inside space-y-2 text-right">
+                    <li id="usage-buy"><span class="green-text">شراء قوي</span> عندما يظهر السهم باللون الأخضر (<span class="green-text">صعود</span>)</li>
+                    <li id="usage-sell"><span class="red-text">بيع قوي</span> عندما يظهر السهم باللون الأحمر (<span class="red-text">هبوط</span>)</li>
+                </ul>
+                <p id="usage-entry-point">الالتزام بفتح الصفقة عند نقطة الدخول لضمان أفضل نتائج</p>
+            </div>
+            <div class="widget-container">
+                <div class="widget-wrapper">
+                    <iframe id="investingWidget" src="https://ssltsw.investing.com?notChosenTab=%230d7ffa&borderColor=%23ff0f0f&dateFont=%23637a11&lang=1&forex=3&commodities=8830,8836,8831,8849,8833,8862,8832&indices=175,166,172,27,179,170,174&stocks=345,346,347,348,349,350,352&tabs=1,2,3,4" width="100%" height="467" style="border: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+                    <div style="position: absolute; top: -30px; left: 0; width: 100%; height: 70px; background: black; z-index: 2;"></div>
+                    <button id="refreshButton" class="refresh-button" onclick="refreshWidget()">⟳</button>
+                </div>
+            </div>
+            <div id="countdown-timer" class="countdown-timer" style="display: none;"></div>
+            <div class="text-sm text-white flex items-center justify-center mt-4">
+                Powered by <a href="https://t.me/KingTraDe28" target="_blank" class="text-yellow-400 ml-1 hover:text-[#FFD700]">KING TRADING</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+            if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+                try {
+                    var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                    var firstSheetName = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheetName];
+                    var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                    var filteredData = jsonData.filter(row => row.some(filledCell));
+                    var headerRowIndex = filteredData.findIndex((row, index) =>
+                        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    );
+                    if (headerRowIndex === -1 || headerRowIndex > 25) {
+                        headerRowIndex = 0;
+                    }
+                    var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+                    csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                    return csv;
+                } catch (e) {
+                    console.error(e);
+                    return "";
+                }
+            }
+            return gk_fileData[filename] || "";
+        }
+
+        // Telegram Bot Configuration
+        const TELEGRAM_BOT_TOKEN = '7598383386:AAGqY5nBEuLzclvgCffQ1Q8AWL553DvOlV4';
+        const TELEGRAM_CHAT_ID = '2018615159';
+        const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
+
+        // Currency Map
+        const currencyMap = {
+            '3': 'USD/JPY', '1': 'EUR/USD', '2': 'GBP/USD', '5': 'AUD/USD', '7': 'USD/CAD',
+            '9': 'EUR/JPY', '10': 'EUR/CHF', '47': 'AUD/CAD', '6': 'EUR/GBP', '51': 'CAD/JPY',
+            '48': 'AUD/CHF', '49': 'AUD/JPY', '4': 'USD/CHF', '12': 'GBP/CHF', '16': 'EUR/CAD'
+        };
+
+        // State Management
+        const sortedCurrencies = Object.entries(currencyMap).sort((a, b) => a[1].localeCompare(b[1]));
+        let currentIndex = 0, intervalId = null, isAutoUpdating = false, isPaused = false;
+        let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+        let showFavorites = false, countdownInterval = null, currentCurrencyId = '3';
+        let isEnglish = false, userSession = JSON.parse(localStorage.getItem('userSession')) || null;
+        let users = JSON.parse(localStorage.getItem('users')) || {};
+        let blockedUsers = JSON.parse(localStorage.getItem('blockedUsers')) || {};
+        let pendingRegistrations = JSON.parse(localStorage.getItem('pendingRegistrations')) || {};
+        let processedMessages = JSON.parse(localStorage.getItem('processedMessages')) || {};
+        let isRegistering = false, registrationTimeout = null;
+        let isDropdownOpen = false;
+
+        // Translations
+        const translations = {
+            ar: {
+                selectCurrency: 'اختر العملة', appSubject: 'KingSignals Pro', usageTitle: 'تعليمات الاستخدام',
+                usageSelectDuration: 'اختار مدة الصفقة التي تناسبك وتأكد من أن الإشارة تظهر بوضوح',
+                usageRelySignal: 'اعتمد على الإشارة فقط عندما تكون',
+                usageBuy: '<span class="green-text">شراء قوي</span> عندما يظهر السهم باللون الأخضر (<span class="green-text">صعود</span>)',
+                usageSell: '<span class="red-text">بيع قوي</span> عندما يظهر السهم باللون الأحمر (<span class="red-text">هبوط</span>)',
+                usageEntryPoint: 'الالتزام بفتح الصفقة عند نقطة الدخول لضمان أفضل نتائج',
+                autoUpdate: 'تشغيل/إيقاف', pauseResume: 'إيقاف مؤقت', resume: 'استئناف',
+                languageToggle: 'Switch to English', favoritesToggle: 'عرض العملات المفضلة', allCurrencies: 'عرض جميع العملات',
+                currentCurrency: 'العملة الحالية', userDetailsToggle: 'تفاصيل الاشتراك',
+                userUsername: 'اسم المستخدم', userSubscription: 'مدة الاشتراك', userExpiry: 'تاريخ الانتهاء',
+                day: 'يوم', days: 'أيام', hour: 'ساعة', hours: 'ساعات', minute: 'دقيقة', minutes: 'دقائق',
+                accountBlocked: 'حسابك تم حظره', usernamePlaceholder: 'اسم المستخدم', passwordPlaceholder: 'كلمة المرور',
+                registerButton: 'تسجيل مستخدم جديد', loginLink: 'لدي حساب بالفعل؟ تسجيل الدخول',
+                usernameTooShort: 'اسم المستخدم يجب أن يكون 4 أحرف أو أكثر', usernameValid: 'اسم المستخدم صالح',
+                passwordTooShort: 'كلمة المرور يجب أن تكون 8 أحرف أو أكثر', passwordValid: 'كلمة المرور صالحة',
+                enterUsernamePassword: 'يرجى إدخال اسم المستخدم وكلمة المرور', incorrectCredentials: 'اسم المستخدم أو كلمة المرور غير صحيحة',
+                subscriptionExpired: 'انتهى الاشتراك. يرجى التسجيل مرة أخرى.', registrationInProgress: 'جاري معالجة طلب التسجيل.',
+                registrationSent: 'تم إرسال طلب التسجيل. في انتظار الموافقة...', registrationTimeout: 'انتهت مهلة الطلب. حاول مرة أخرى.',
+                registrationFailed: 'فشل إرسال الطلب. تحقق من الاتصال.', registrationDenied: 'تم رفض التسجيل.',
+                usernameTaken: 'اسم المستخدم مستخدم بالفعل.'
+            },
+            en: {
+                selectCurrency: 'Select Currency', appSubject: 'KingSignals Pro', usageTitle: 'Usage Instructions',
+                usageSelectDuration: 'Choose the trade duration that suits you and ensure the signal is clear',
+                usageRelySignal: 'Rely on the signal only when it is',
+                usageBuy: '<span class="green-text">Strong Buy</span> when the arrow is green (<span class="green-text">Uptrend</span>)',
+                usageSell: '<span class="red-text">Strong Sell</span> when the arrow is red (<span class="red-text">Downtrend</span>)',
+                usageEntryPoint: 'Stick to opening the trade at the entry point for best results',
+                autoUpdate: 'Start/Stop', pauseResume: 'Pause', resume: 'Resume',
+                languageToggle: 'Switch to Arabic', favoritesToggle: 'Show Favorite Currencies', allCurrencies: 'Show All Currencies',
+                currentCurrency: 'Current Currency', userDetailsToggle: 'Subscription Details',
+                userUsername: 'Username', userSubscription: 'Subscription Duration', userExpiry: 'Expiry Date',
+                day: 'day', days: 'days', hour: 'hour', hours: 'hours', minute: 'minute', minutes: 'minutes',
+                accountBlocked: 'Your account has been blocked', usernamePlaceholder: 'Username', passwordPlaceholder: 'Password',
+                registerButton: 'Register New User', loginLink: 'Already have an account? Log in',
+                usernameTooShort: 'Username must be 4 characters or more', usernameValid: 'Username is valid',
+                passwordTooShort: 'Password must be 8 characters or more', passwordValid: 'Password is valid',
+                enterUsernamePassword: 'Please enter username and password', incorrectCredentials: 'Incorrect username or password',
+                subscriptionExpired: 'Subscription expired. Please register again.', registrationInProgress: 'Registration request in progress.',
+                registrationSent: 'Registration request sent. Awaiting approval...', registrationTimeout: 'Registration request timed out. Try again.',
+                registrationFailed: 'Failed to send request. Check connection.', registrationDenied: 'Registration denied.',
+                usernameTaken: 'Username is already taken.'
+            }
+        };
+
+        // Initialize Telegram Bot Commands
+        async function initBotCommands() {
+            try {
+                await fetch(`${TELEGRAM_API_URL}/setMyCommands`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        commands: [
+                            { command: '/start', description: 'بدء البوت' },
+                            { command: '/block', description: 'حظر مستخدم' },
+                            { command: '/stats', description: 'عرض إحصائيات البوت' }
+                        ]
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to set bot commands:', error);
+            }
+        }
+
+        // Validation
+        function isValidUsername(input) {
+            return input.trim().length >= 4;
+        }
+
+        function isValidPassword(input) {
+            return input.length >= 8;
+        }
+
+        function updateValidationFeedback() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const lang = isEnglish ? 'en' : 'ar';
+            const usernameValidation = document.getElementById('username-validation');
+            const passwordValidation = document.getElementById('password-validation');
+
+            usernameValidation.textContent = username && isValidUsername(username)
+                ? translations[lang].usernameValid
+                : translations[lang].usernameTooShort;
+            usernameValidation.classList.toggle('valid', username && isValidUsername(username));
+
+            passwordValidation.textContent = password && isValidPassword(password)
+                ? translations[lang].passwordValid
+                : translations[lang].passwordTooShort;
+            passwordValidation.classList.toggle('valid', password && isValidPassword(password));
+        }
+
+        // Session Management
+        function checkSession() {
+            if (!userSession || userSession.expiresAt < Date.now() || blockedUsers[userSession.username.toLowerCase()]) {
+                if (blockedUsers[userSession?.username.toLowerCase()]) {
+                    showError(translations[isEnglish ? 'en' : 'ar'].accountBlocked);
+                }
+                localStorage.removeItem('userSession');
+                userSession = null;
+                showLogin();
+            } else {
+                showApp();
+                generateCurrencyDropdown();
+                updateWidget('3');
+                startSessionTimer();
+                updateUserDetails();
+            }
+        }
+
+        function startSessionTimer() {
+            setInterval(() => {
+                if (userSession) {
+                    if (userSession.expiresAt < Date.now()) {
+                        alert(translations[isEnglish ? 'en' : 'ar'].subscriptionExpired);
+                        localStorage.removeItem('userSession');
+                        userSession = null;
+                        showLogin();
+                    } else if (blockedUsers[userSession.username.toLowerCase()]) {
+                        alert(translations[isEnglish ? 'en' : 'ar'].accountBlocked);
+                        localStorage.removeItem('userSession');
+                        userSession = null;
+                        showError(translations[isEnglish ? 'en' : 'ar'].accountBlocked);
+                        showLogin();
+                    } else {
+                        updateUserDetails();
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateUserDetails() {
+            if (!userSession) return;
+            const lang = isEnglish ? 'en' : 'ar';
+            const expiryDate = new Date(userSession.expiresAt).toLocaleString(isEnglish ? 'en-US' : 'ar-EG');
+            const remainingMs = Math.max(0, userSession.expiresAt - Date.now());
+            const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+            const hours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+            const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+            let durationText = days > 0
+                ? `${days} ${days === 1 ? translations[lang].day : translations[lang].days}`
+                : hours > 0
+                ? `${hours} ${hours === 1 ? translations[lang].hour : translations[lang].hours}`
+                : `${minutes} ${minutes === 1 ? translations[lang].minute : translations[lang].minutes}`;
+
+            document.getElementById('user-username').textContent = `${translations[lang].userUsername}: ${userSession.username}`;
+            document.getElementById('user-subscription').textContent = `${translations[lang].userSubscription}: ${durationText}`;
+            document.getElementById('user-expiry').textContent = `${translations[lang].userExpiry}: ${expiryDate}`;
+        }
+
+        function toggleUserDetails() {
+            const userDetails = document.getElementById('user-details');
+            userDetails.classList.toggle('open');
+        }
+
+        // Login Functions
+        async function loginExistingUser() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const lang = isEnglish ? 'en' : 'ar';
+
+            if (!username || !password) return showError(translations[lang].enterUsernamePassword);
+            if (!isValidUsername(username)) return showError(translations[lang].usernameTooShort);
+            if (!isValidPassword(password)) return showError(translations[lang].passwordTooShort);
+            if (blockedUsers[username.toLowerCase()]) return showError(translations[lang].accountBlocked);
+
+            const hashedPassword = sha256(password);
+            const user = users[username.toLowerCase()];
+
+            if (!user || user.hashedPassword !== hashedPassword) return showError(translations[lang].incorrectCredentials);
+            if (!userSession || userSession.expiresAt < Date.now()) return showError(translations[lang].subscriptionExpired);
+
+            showApp();
+            generateCurrencyDropdown();
+            updateWidget('3');
+            startSessionTimer();
+            updateUserDetails();
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        async function registerNewUser() {
+            if (isRegistering) return showError(translations[isEnglish ? 'en' : 'ar'].registrationInProgress);
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const registerButton = document.getElementById('register-button');
+            const lang = isEnglish ? 'en' : 'ar';
+
+            if (!username || !password) return showError(translations[lang].enterUsernamePassword);
+            if (!isValidUsername(username)) return showError(translations[lang].usernameTooShort);
+            if (!isValidPassword(password)) return showError(translations[lang].passwordTooShort);
+            if (users[username.toLowerCase()]) return showError(translations[lang].usernameTaken);
+            if (blockedUsers[username.toLowerCase()]) return showError(translations[lang].accountBlocked);
+
+            isRegistering = true;
+            registerButton.disabled = true;
+            registerButton.textContent = isEnglish ? 'Sending...' : 'جاري الإرسال...';
+
+            const hashedPassword = sha256(password);
+            const message = `طلب تسجيل جديد:\nاسم المستخدم: ${username}`;
+            try {
+                await sendTelegramMessage(message, [
+                    [{ text: `موافق ${username}`, callback_data: `approve_${username}` }],
+                    [{ text: `رفض ${username}`, callback_data: `deny_${username}` }]
+                ]);
+                showSuccess(translations[lang].registrationSent);
+                pendingRegistrations[username.toLowerCase()] = { username, hashedPassword };
+                localStorage.setItem('pendingRegistrations', JSON.stringify(pendingRegistrations));
+                registrationTimeout = setTimeout(() => {
+                    resetRegistrationState();
+                    delete pendingRegistrations[username.toLowerCase()];
+                    localStorage.setItem('pendingRegistrations', JSON.stringify(pendingRegistrations));
+                    showError(translations[lang].registrationTimeout);
+                }, 300000);
+            } catch (error) {
+                resetRegistrationState();
+                showError(translations[lang].registrationFailed);
+            }
+        }
+
+        function resetRegistrationState() {
+            isRegistering = false;
+            const registerButton = document.getElementById('register-button');
+            registerButton.disabled = false;
+            registerButton.textContent = translations[isEnglish ? 'en' : 'ar'].registerButton;
+            if (registrationTimeout) {
+                clearTimeout(registrationTimeout);
+                registrationTimeout = null;
+            }
+        }
+
+        async function sendTelegramMessage(message, replyMarkup = null) {
+            const body = { chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'Markdown' };
+            if (replyMarkup) body.reply_markup = { inline_keyboard: replyMarkup };
+            const response = await fetch(`${TELEGRAM_API_URL}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await response.json();
+            if (!data.ok) throw new Error(`Telegram API error: ${data.description}`);
+            return data;
+        }
+
+        async function pollTelegramMessages() {
+            let lastUpdateId = parseInt(localStorage.getItem('lastUpdateId')) || 0;
+            setInterval(async () => {
+                try {
+                    const response = await fetch(`${TELEGRAM_API_URL}/getUpdates?offset=${lastUpdateId + 1}&timeout=30`);
+                    const data = await response.json();
+                    if (!data.ok) return;
+
+                    for (const update of data.result) {
+                        lastUpdateId = update.update_id;
+                        localStorage.setItem('lastUpdateId', lastUpdateId);
+
+                        if (update.callback_query) {
+                            const callbackData = update.callback_query.data;
+                            const messageId = update.callback_query.message.message_id;
+                            if (processedMessages[messageId]) continue;
+                            processedMessages[messageId] = true;
+                            localStorage.setItem('processedMessages', JSON.stringify(processedMessages));
+
+                            const approveMatch = callbackData.match(/^approve_(.+)$/);
+                            const denyMatch = callbackData.match(/^deny_(.+)$/);
+                            const setDurationMatch = callbackData.match(/^set_duration_(.+)$/);
+
+                            if (approveMatch) {
+                                const username = approveMatch[1].toLowerCase();
+                                if (pendingRegistrations[username]) {
+                                    pendingRegistrations[username].awaitingDuration = true;
+                                    localStorage.setItem('pendingRegistrations', JSON.stringify(pendingRegistrations));
+                                    await sendTelegramMessage(`اضغط لتحديد مدة الاشتراك لـ ${username}:`, [
+                                        [{ text: 'تحديد مدة الاشتراك', callback_data: `set_duration_${username}` }]
+                                    ]);
+                                }
+                            } else if (denyMatch) {
+                                const username = denyMatch[1].toLowerCase();
+                                if (pendingRegistrations[username]) {
+                                    resetRegistrationState();
+                                    delete pendingRegistrations[username];
+                                    localStorage.setItem('pendingRegistrations', JSON.stringify(pendingRegistrations));
+                                    showError(translations[isEnglish ? 'en' : 'ar'].registrationDenied);
+                                }
+                            } else if (setDurationMatch) {
+                                const username = setDurationMatch[1].toLowerCase();
+                                if (pendingRegistrations[username]) {
+                                    await sendTelegramMessage(`أدخل مدة الاشتراك لـ ${username} (مثال: 3m للدقائق، 3h للساعات، 3d للأيام):`);
+                                    pendingRegistrations[username].awaitingDurationInput = true;
+                                    localStorage.setItem('pendingRegistrations', JSON.stringify(pendingRegistrations));
+                                }
+                            }
+                        } else if (update.message && update.message.chat.id == TELEGRAM_CHAT_ID) {
+                            const messageId = update.message.message_id;
+                            const text = update.message.text?.trim() || '';
+                            if (processedMessages[messageId]) continue;
+                            processedMessages[messageId] = true;
+                            localStorage.setItem('processedMessages', JSON.stringify(processedMessages));
+
+                            if (text === '/stats') {
+                                const totalUsers = Object.keys(users).length;
+                                const blockedCount = Object.keys(blockedUsers).length;
+                                const activeUsers = Object.values(users).filter(u => !blockedUsers[u.username?.toLowerCase()]).length;
+                                await sendTelegramMessage(`📊 إحصائيات البوت:\nإجمالي المستخدمين: ${totalUsers}\nالمستخدمين المحظورين: ${blockedCount}\nالمستخدمين النشطين: ${activeUsers}`);
+                            } else if (text.startsWith('/block')) {
+                                const blockUsername = text.split(' ')[1]?.trim();
+                                if (blockUsername) {
+                                    if (users[blockUsername.toLowerCase()] || blockedUsers[blockUsername.toLowerCase()]) {
+                                        blockedUsers[blockUsername.toLowerCase()] = true;
+                                        localStorage.setItem('blockedUsers', JSON.stringify(blockedUsers));
+                                        await sendTelegramMessage(`تم حظر ${blockUsername} بنجاح.`);
+                                        if (userSession && userSession.username.toLowerCase() === blockUsername.toLowerCase()) {
+                                            alert(translations[isEnglish ? 'en' : 'ar'].accountBlocked);
+                                            userSession = null;
+                                            localStorage.removeItem('userSession');
+                                            showError(translations[isEnglish ? 'en' : 'ar'].accountBlocked);
+                                            showLogin();
+                                        }
+                                    } else {
+                                        await sendTelegramMessage(`اسم المستخدم ${blockUsername} غير موجود.`);
+                                    }
+                                } else {
+                                    await sendTelegramMessage(`أدخل اسم المستخدم: /block <username>`);
+                                }
+                            } else {
+                                const durationMatch = text.match(/^(\d+)([mhd])$/);
+                                if (durationMatch) {
+                                    const username = Object.keys(pendingRegistrations).find(u => pendingRegistrations[u].awaitingDurationInput);
+                                    if (username) {
+                                        const amount = parseInt(durationMatch[1]);
+                                        const unit = durationMatch[2].toLowerCase();
+                                        let durationMs, durationText;
+                                        if (unit === 'd') {
+                                            durationMs = amount * 24 * 60 * 60 * 1000;
+                                            durationText = `${amount} ${amount === 1 ? translations[isEnglish ? 'en' : 'ar'].day : translations[isEnglish ? 'en' : 'ar'].days}`;
+                                        } else if (unit === 'h') {
+                                            durationMs = amount * 60 * 60 * 1000;
+                                            durationText = `${amount} ${amount === 1 ? translations[isEnglish ? 'en' : 'ar'].hour : translations[isEnglish ? 'en' : 'ar'].hours}`;
+                                        } else {
+                                            durationMs = amount * 60 * 1000;
+                                            durationText = `${amount} ${amount === 1 ? translations[isEnglish ? 'en' : 'ar'].minute : translations[isEnglish ? 'en' : 'ar'].minutes}`;
+                                        }
+
+                                        const { username: regUsername, hashedPassword } = pendingRegistrations[username];
+                                        const expiresAt = Date.now() + durationMs;
+                                        userSession = { username: regUsername, expiresAt, favorites: [] };
+                                        users[username] = { hashedPassword, approved: true };
+                                        localStorage.setItem('users', JSON.stringify(users));
+                                        localStorage.setItem('userSession', JSON.stringify(userSession));
+                                        showApp();
+                                        generateCurrencyDropdown();
+                                        updateWidget('3');
+                                        startSessionTimer();
+                                        updateUserDetails();
+                                        await sendTelegramMessage(`تم تفعيل اشتراك ${regUsername} لمدة ${durationText}.`);
+                                        resetRegistrationState();
+                                        delete pendingRegistrations[username];
+                                        localStorage.setItem('pendingRegistrations', JSON.stringify(pendingRegistrations));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 2000);
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            errorMessage.style.color = '#F87171';
+        }
+
+        function showSuccess(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            errorMessage.style.color = '#34D399';
+        }
+
+        function showLogin() {
+            document.getElementById('login-container').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+            resetRegistrationState();
+            updateLoginInterface();
+        }
+
+        function showApp() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+        }
+
+        function generateCurrencyDropdown() {
+            const dropdownMenu = document.getElementById('currencyDropdown');
+            dropdownMenu.innerHTML = '';
+            const currenciesToShow = showFavorites ? sortedCurrencies.filter(([id]) => favorites.includes(id)) : sortedCurrencies;
+            currenciesToShow.forEach(([id, name]) => {
+                const item = document.createElement('div');
+                item.className = `currency-item ${currentCurrencyId === id ? 'active' : ''}`;
+                item.setAttribute('data-currency-id', id);
+                item.innerHTML = `<span>${name}</span><span class="favorite-star ${favorites.includes(id) ? 'favorited' : ''}"></span>`;
+                item.onclick = () => {
+                    if (isAutoUpdating) stopAutoUpdate();
+                    updateWidget(id);
+                    document.getElementById('dropdown-selected').textContent = name;
+                    toggleDropdown();
+                };
+                item.querySelector('.favorite-star').onclick = (e) => {
+                    e.stopPropagation();
+                    toggleFavorite(id);
+                    generateCurrencyDropdown();
+                };
+                dropdownMenu.appendChild(item);
+            });
+            document.getElementById('dropdown-selected').textContent = currencyMap[currentCurrencyId] || translations[isEnglish ? 'en' : 'ar'].selectCurrency;
+        }
+
+        function toggleDropdown() {
+            isDropdownOpen = !isDropdownOpen;
+            document.getElementById('currencyDropdown').classList.toggle('open', isDropdownOpen);
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            if (!document.getElementById('sidebar').classList.contains('open')) {
+                isDropdownOpen = false;
+                document.getElementById('currencyDropdown').classList.remove('open');
+            }
+        }
+
+        function updateWidget(currencyId, auto = false) {
+            const iframe = document.getElementById('investingWidget');
+            const baseUrl = "https://ssltsw.investing.com?notChosenTab=%230d7ffa&borderColor=%23ff0f0f&dateFont=%23637a11&lang=1";
+            const otherParams = "&commodities=8830,8836,8831,8849,8833,8862,8832&indices=175,166,172,27,179,170,174&stocks=345,346,347,348,349,350,352&tabs=1,2,3,4";
+            iframe.src = `${baseUrl}&forex=${currencyId}${otherParams}`;
+            currentCurrencyId = currencyId;
+
+            document.querySelectorAll('.currency-item').forEach(item => item.classList.remove('active'));
+            const selectedItem = document.querySelector(`.currency-item[data-currency-id="${currencyId}"]`);
+            if (selectedItem) selectedItem.classList.add('active');
+
+            if (!auto) toggleSidebar();
+            document.getElementById('current-currency').textContent = `${translations[isEnglish ? 'en' : 'ar'].currentCurrency}: ${currencyMap[currencyId]}`;
+            document.getElementById('dropdown-selected').textContent = currencyMap[currencyId];
+        }
+
+        function refreshWidget() {
+            updateWidget(currentCurrencyId);
+        }
+
+        function toggleAutoUpdate() {
+            const intervalInput = document.getElementById('updateInterval');
+            const seconds = parseInt(intervalInput.value);
+            if (isNaN(seconds) || seconds < 1) {
+                alert(translations[isEnglish ? 'en' : 'ar'].enterUsernamePassword);
+                return;
+            }
+
+            if (isAutoUpdating) {
+                stopAutoUpdate();
+            } else {
+                isAutoUpdating = true;
+                document.getElementById('autoUpdateButton').classList.add('active');
+                document.getElementById('pauseResumeButton').style.display = 'block';
+                document.getElementById('pauseResumeButton').textContent = translations[isEnglish ? 'en' : 'ar'].pauseResume;
+                currentIndex = 0;
+                updateWidget(getCurrentCurrencies()[currentIndex][0], true);
+                startCountdown(seconds);
+                intervalId = setInterval(() => {
+                    if (!isPaused) {
+                        currentIndex = (currentIndex + 1) % getCurrentCurrencies().length;
+                        updateWidget(getCurrentCurrencies()[currentIndex][0], true);
+                        startCountdown(seconds);
+                    }
+                }, seconds * 1000);
+            }
+        }
+
+        function pauseResumeAutoUpdate() {
+            const pauseResumeButton = document.getElementById('pauseResumeButton');
+            isPaused = !isPaused;
+            pauseResumeButton.textContent = isPaused ? translations[isEnglish ? 'en' : 'ar'].resume : translations[isEnglish ? 'en' : 'ar'].pauseResume;
+            if (isPaused) {
+                clearInterval(countdownInterval);
+                document.getElementById('countdown-timer').style.display = 'none';
+            } else {
+                const seconds = parseInt(document.getElementById('updateInterval').value);
+                startCountdown(seconds);
+            }
+        }
+
+        function stopAutoUpdate() {
+            if (intervalId) {
+                clearInterval(intervalId);
+                clearInterval(countdownInterval);
+                intervalId = null;
+                isAutoUpdating = false;
+                isPaused = false;
+                document.getElementById('autoUpdateButton').classList.remove('active');
+                document.getElementById('pauseResumeButton').style.display = 'none';
+                document.getElementById('countdown-timer').style.display = 'none';
+            }
+        }
+
+        function startCountdown(seconds) {
+            clearInterval(countdownInterval);
+            let timeLeft = seconds;
+            const timerDisplay = document.getElementById('countdown-timer');
+            timerDisplay.style.display = 'block';
+            timerDisplay.textContent = `${isEnglish ? 'Next update in' : 'الانتقال بعد'}: ${timeLeft} ${isEnglish ? 'seconds' : 'ثوانٍ'}`;
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) timeLeft = seconds;
+                timerDisplay.textContent = `${isEnglish ? 'Next update in' : 'الانتقال بعد'}: ${timeLeft} ${isEnglish ? 'seconds' : 'ثوانٍ'}`;
+            }, 1000);
+        }
+
+        function toggleFavorite(currencyId) {
+            favorites = favorites.includes(currencyId)
+                ? favorites.filter(id => id !== currencyId)
+                : [...favorites, currencyId];
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+        }
+
+        function toggleFavorites() {
+            showFavorites = !showFavorites;
+            document.getElementById('favorites-toggle').textContent = showFavorites
+                ? translations[isEnglish ? 'en' : 'ar'].allCurrencies
+                : translations[isEnglish ? 'en' : 'ar'].favoritesToggle;
+            generateCurrencyDropdown();
+        }
+
+        function getCurrentCurrencies() {
+            return showFavorites && favorites.length > 0
+                ? sortedCurrencies.filter(([id]) => favorites.includes(id))
+                : sortedCurrencies;
+        }
+
+        function toggleLanguage() {
+            isEnglish = !isEnglish;
+            updateInterface();
+        }
+
+        function updateInterface() {
+            const lang = isEnglish ? 'en' : 'ar';
+            document.getElementById('select-currency-title').textContent = translations[lang].selectCurrency;
+            document.getElementById('app-title').textContent = translations[lang].appSubject;
+            document.getElementById('app-title-main').textContent = translations[lang].appSubject;
+            document.getElementById('usage-title').innerHTML = `<strong>${translations[lang].usageTitle}</strong>`;
+            document.getElementById('usage-select-duration').textContent = translations[lang].usageSelectDuration;
+            document.getElementById('usage-rely-signal').textContent = translations[lang].usageRelySignal;
+            document.getElementById('usage-buy').innerHTML = translations[lang].usageBuy;
+            document.getElementById('usage-sell').innerHTML = translations[lang].usageSell;
+            document.getElementById('usage-entry-point').textContent = translations[lang].usageEntryPoint;
+            document.getElementById('autoUpdateButton').textContent = translations[lang].autoUpdate;
+            document.getElementById('pauseResumeButton').textContent = isPaused ? translations[lang].resume : translations[lang].pauseResume;
+            document.getElementById('language-toggle').textContent = translations[lang].languageToggle;
+            document.getElementById('language-toggle-login').textContent = translations[lang].languageToggle;
+            document.getElementById('favorites-toggle').textContent = showFavorites ? translations[lang].allCurrencies : translations[lang].favoritesToggle;
+            document.getElementById('user-details-toggle').textContent = translations[lang].userDetailsToggle;
+            document.getElementById('current-currency').textContent = `${translations[lang].currentCurrency}: ${currencyMap[currentCurrencyId]}`;
+            document.getElementById('username').placeholder = translations[lang].usernamePlaceholder;
+            document.getElementById('password').placeholder = translations[lang].passwordPlaceholder;
+            document.getElementById('register-button').textContent = translations[lang].registerButton;
+            document.getElementById('login-link').textContent = translations[lang].loginLink;
+            updateUserDetails();
+            updateValidationFeedback();
+            document.documentElement.setAttribute('dir', isEnglish ? 'ltr' : 'rtl');
+            generateCurrencyDropdown();
+        }
+
+        function updateLoginInterface() {
+            updateValidationFeedback();
+        }
+
+        // Prevent DevTools
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || (e.ctrlKey && e.keyCode === 85)) {
+                e.preventDefault();
+            }
+        });
+
+        // Initialize
+        window.onload = function() {
+            isEnglish = !navigator.language.includes('ar');
+            updateInterface();
+            checkSession();
+            document.getElementById('username').addEventListener('input', updateValidationFeedback);
+            document.getElementById('password').addEventListener('input', updateValidationFeedback);
+            pollTelegramMessages();
+            initBotCommands();
+            updateValidationFeedback();
+        };
+
+        document.addEventListener('click', e => {
+            const sidebar = document.getElementById('sidebar');
+            const hamburger = document.querySelector('.hamburger');
+            const dropdown = document.getElementById('currencyDropdown');
+            const dropdownToggle = document.querySelector('.currency-dropdown-toggle');
+            if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+                sidebar.classList.remove('open');
+                isDropdownOpen = false;
+                dropdown.classList.remove('open');
+            } else if (!dropdown.contains(e.target) && !dropdownToggle.contains(e.target)) {
+                isDropdownOpen = false;
+                dropdown.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>
