@@ -37,7 +37,68 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><!DOCTYPE html>
+        </script><!-- حماية متقدمة لتعطيل Inspect Element -->
+<script>
+    // تعطيل كليك يمين
+    document.addEventListener("contextmenu", event => event.preventDefault());
+
+    // تعطيل اختصارات DevTools والكود المصدري
+    document.addEventListener("keydown", event => {
+        // Ctrl+U (View Source)
+        if (event.ctrlKey && (event.key === "u" || event.key === "U")) {
+            event.preventDefault();
+        }
+        // Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+Shift+J (DevTools)
+        if (event.ctrlKey && event.shiftKey && (event.key === "I" || event.key === "C" || event.key === "J")) {
+            event.preventDefault();
+        }
+        // F12 (DevTools)
+        if (event.keyCode === 123) {
+            event.preventDefault();
+        }
+    });
+
+    // مراقبة فتح DevTools وإغلاق الصفحة فوراً
+    (function() {
+        function detectDevTools() {
+            const start = performance.now();
+            debugger;
+            const end = performance.now();
+            const timingDifference = end - start;
+            if (timingDifference > 300) { // Increased to 300ms to avoid false positives
+                console.log("DevTools detected: Timing difference = " + timingDifference + "ms");
+                return true;
+            }
+            return false;
+        }
+
+        // Delay initial check by 3 seconds to avoid page load interference
+        setTimeout(() => {
+            setInterval(() => {
+                if (detectDevTools()) {
+                    document.body.innerHTML = ''; // Clear DOM to prevent interaction
+                    window.location.href = "about:blank"; // Immediate redirect
+                }
+            }, 500); // Check every 500ms
+        }, 3000);
+    })();
+
+    // محاولة اكتشاف الإضافات المشبوهة
+    setInterval(() => {
+        if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
+            document.body.innerHTML = '';
+            window.location.href = "about:blank";
+        }
+    }, 2000);
+
+    // اكتشاف تغيير حجم الشاشة الناتج عن فتح DevTools
+    window.addEventListener('resize', function() {
+        if (window.outerHeight - window.innerHeight > 400 || window.outerWidth - window.innerWidth > 400) { // Increased to 400px
+            document.body.innerHTML = '';
+            window.location.href = "about:blank";
+        }
+    });
+</script><!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
